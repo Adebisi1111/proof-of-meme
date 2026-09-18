@@ -93,8 +93,16 @@ class ProofOfMeme(gl.Contract):
         return bounty
     
     @gl.public.view
-    def next_id(self) -> str:
-        return str(int(self.next_bounty_id))
+    def get_all_bounties(self) -> str:
+        """Return all bounties as JSON list."""
+        result = []
+        for i in range(int(self.next_bounty_id)):
+            bounty = self.bounties.get(u256(i), None)
+            if bounty is not None:
+                parsed = json.loads(bounty)
+                parsed["id"] = i
+                result.append(parsed)
+        return json.dumps(result)
 
 
 import json
