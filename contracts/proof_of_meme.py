@@ -103,6 +103,10 @@ class ProofOfMeme(gl.Contract):
                 parsed["id"] = i
                 result.append(parsed)
         return json.dumps(result)
+    
+    @gl.public.view
+    def next_id(self) -> str:
+        return str(int(self.next_bounty_id))
 
 
 import json
