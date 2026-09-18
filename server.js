@@ -48,10 +48,19 @@ app.post('/api/create-bounty', async (req, res) => {
       value: BigInt(value),
     });
 
+    // Read back the bounty ID
+    const nextId = await client.readContract({
+      address: CONTRACT_ADDRESS,
+      functionName: 'next_id',
+      args: [],
+    });
+    const bountyId = parseInt(nextId) - 1;
+
     res.json({
       status: 'success',
       tx_hash: txHash,
-      message: 'Bounty created. Waiting for GenLayer consensus...'
+      bounty_id: bountyId,
+      message: 'Bounty created. Bounty ID: ' + bountyId
     });
   } catch (err) {
     console.error('Create bounty error:', err);
@@ -143,17 +152,17 @@ app.get('/api/bounty/:id', async (req, res) => {
   }
 });
 
-// Get next ID
-app.get('/api/next-id', async (req, res) => {
+// Get all bounties
+app.get('/api/bounties', async (req, res) => {
   try {
     const { createClient, chains } = require('genlayer-js');
     const client = createClient({ chain: chains.testnetBradbury });
-    const id = await client.readContract({
+    const bounties = await client.readContract({
       address: CONTRACT_ADDRESS,
-      functionName: 'next_id',
+      functionName: 'get_all_bounties',
       args: [],
     });
-    res.json({ next_id: parseInt(id) });
+    res.json(JSON.parse(bounties));
   } catch (err) {
     res.status(500).json({ detail: err.message });
   }
