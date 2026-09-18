@@ -4,12 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proof-of-Meme | Live Marketing Receipt</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-    <script>
-    if (typeof ethers === 'undefined') {
-        document.write('<script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"><\/script>');
-    }
-    </script>
+    <script src="https://cdn.ethers.com/lib/ethers-5.2.umd.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
@@ -73,6 +68,10 @@
         .bounty-item p { font-size: 0.75rem; color: #888; margin-top: 0.25rem; }
         
         .placeholder-card { background: #0a0a0f; border: 1px dashed #333; border-radius: 6px; padding: 1rem; text-align: center; color: #666; font-size: 0.85rem; }
+        
+        .role-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+        .role-badge.sponsor { background: #7c3aed33; color: #7c3aed; }
+        .role-badge.creator { background: #00d4aa33; color: #00d4aa; }
     </style>
 </head>
 <body>
@@ -88,7 +87,11 @@
                 <div class="wallet-balance" id="wallet-balance">Balance: —</div>
                 <div class="wallet-network" id="wallet-network">Network: —</div>
             </div>
-            <button class="wallet-btn" onclick="connectWallet()" id="wallet-btn">Connect Wallet</button>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+                <span class="role-badge sponsor" id="role-sponsor" style="display:none;">SPONSOR</span>
+                <span class="role-badge creator" id="role-creator" style="display:none;">CREATOR</span>
+                <button class="wallet-btn" onclick="connectWallet()" id="wallet-btn">Connect Wallet</button>
+            </div>
         </div>
         
         <!-- Active Bounties -->
@@ -102,10 +105,10 @@
         
         <div class="two-col">
             <!-- LEFT: Campaign Vault (Sponsors) -->
-            <div class="card">
+            <div class="card" id="sponsor-card">
                 <h2>🎯 Campaign Vault</h2>
                 <h3>For Sponsors</h3>
-                <p style="font-size:0.8rem;color:#888;margin-bottom:0.5rem;">Lock GEN in escrow via backend relay</p>
+                <p style="font-size:0.8rem;color:#888;margin-bottom:0.5rem;">Lock GEN in escrow directly from your MetaMask wallet</p>
                 <label>Project Token</label>
                 <input id="project" placeholder="DOGE, SHIB, PEPE...">
                 <label>Campaign Description</label>
@@ -116,7 +119,7 @@
                 <input id="reward" type="number" placeholder="5.0" step="0.1">
                 <label>Minimum Likes Threshold</label>
                 <input id="min-likes" type="number" placeholder="500">
-                <button class="btn-primary" onclick="createBounty()" id="create-btn">🔒 Deploy & Fund Bounty</button>
+                <button class="btn-primary" onclick="createBounty()" id="create-btn" disabled>🔒 Connect Wallet to Fund</button>
                 
                 <div id="vault-receipt" class="vault-receipt">
                     <h2>🔒 Escrow Vault Active</h2>
@@ -131,7 +134,7 @@
             </div>
             
             <!-- RIGHT: AI Verification Feed (Creators) -->
-            <div class="card">
+            <div class="card" id="creator-card">
                 <h2>🤖 AI Verification Feed</h2>
                 <h3>For Creators</h3>
                 <p style="font-size:0.8rem;color:#888;margin-bottom:0.5rem;">Submit viral memes and earn GEN directly to your wallet</p>
@@ -139,11 +142,11 @@
                 <input id="bounty-id" type="number" placeholder="0">
                 <label>Your Twitter/Reddit Post URL</label>
                 <input id="post-url" placeholder="https://x.com/...">
-                <button class="btn-primary" onclick="submitMeme()" id="submit-btn">🚀 Submit for AI Adjudication</button>
+                <button class="btn-primary" onclick="submitMeme()" id="submit-btn" disabled>🚀 Connect Wallet to Submit</button>
                 
                 <div id="progress-feed" class="progress-feed" style="display:none;">
                     <div class="progress-line active" id="p1">🤖 GenLayer AI Consensus Active</div>
-                    <div class="progress-line" id="p2">🔍 Crawl Status: Web-scraping public metrics...</div>
+                    <div class="progress-line" id="p2">🔍 Crawl Status: Web-scraping public metrics for the submitted post URL...</div>
                     <div class="progress-line" id="p3">🗳️ Consensus Status: Running multi-node prompt comparison...</div>
                 </div>
                 
@@ -157,7 +160,6 @@
     </div>
 
     <script>
-    const API = 'https://proof-of-meme.onrender.com';
     const BRADBURY = {
         chainId: '0x107d',
         chainName: 'GenLayer Bradbury Testnet',
@@ -166,7 +168,19 @@
         blockExplorerUrls: ['https://explorer-bradbury.genlayer.com']
     };
     
-    let userAddress;
+    const API = 'https://proof-of-meme.onrender.com';
+    const CONTRACT = '0x11d301222Fd7Fbb37E29344c62e1CB01e66AE1dA';
+    
+    // Contract ABI for the functions we need
+    const ABI = [
+        "function create_bounty(string project_token, string description, uint256 min_engagement) public payable returns (uint256)",
+        "function submit_meme(uint256 bounty_id, string post_url) public",
+        "function get_bounty(uint256 bounty_id) public view returns (string)",
+        "function get_all_bounties() public view returns (string)",
+        "function next_id() public view returns (string)"
+    ];
+    
+    let provider, signer, contract, userAddress;
     
     async function connectWallet() {
         if (!window.ethereum) {
@@ -192,13 +206,20 @@
                 }
             }
             
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            signer = provider.getSigner();
+            contract = new ethers.Contract(CONTRACT, ABI, signer);
+            
             document.getElementById('wallet-addr').textContent = userAddress.slice(0,6) + '...' + userAddress.slice(-4);
             document.getElementById('wallet-btn').textContent = 'Connected';
             document.getElementById('wallet-btn').classList.add('connected');
+            document.getElementById('create-btn').disabled = false;
+            document.getElementById('submit-btn').disabled = false;
+            document.getElementById('create-btn').textContent = '🔒 Deploy & Fund Bounty';
+            document.getElementById('submit-btn').textContent = '🚀 Submit for AI Adjudication';
             
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
             const bal = await provider.getBalance(userAddress);
-            document.getElementById('wallet-balance').textContent = 'Balance: ' + parseFloat(ethers.utils.formatEther(String(bal))).toFixed(4) + ' GEN';
+            document.getElementById('wallet-balance').textContent = 'Balance: ' + parseFloat(ethers.utils.formatEther(bal)).toFixed(4) + ' GEN';
             document.getElementById('wallet-network').textContent = 'Network: GenLayer Bradbury';
             
             window.ethereum.on('accountsChanged', () => location.reload());
@@ -225,13 +246,13 @@
             
             let html = '';
             data.forEach(b => {
-                const reward = b.amount ? parseFloat(ethers.utils.formatEther(String(b.amount))) : 0;
+                const reward = b.amount ? (b.amount / 1e18).toFixed(2) : '0';
                 const likes = b.min_engagement || 500;
                 html += `<div class="bounty-item" onclick="selectBounty(${b.id})">
                     <strong>${b.project_token || 'Unknown'}</strong>
                     <span class="id-tag">ID: ${b.id}</span>
                     <span style="color:${b.status === 'OPEN' ? '#00d4aa' : '#ffd93d'}">${b.status}</span>
-                    <p>Campaign #${b.id} | Goal: ${likes} Likes | Reward: ${reward.toFixed(2)} GEN</p>
+                    <p>Campaign #${b.id} | Goal: ${likes} Likes | Reward: ${reward} GEN</p>
                     <p style="color:#666;">${b.description || ''}</p>
                 </div>`;
             });
@@ -246,6 +267,8 @@
     }
     
     async function createBounty() {
+        if (!contract) return alert('Connect wallet first');
+        
         const project = document.getElementById('project').value;
         const desc = document.getElementById('desc').value;
         const hashtag = document.getElementById('hashtag').value || '#GenLayer';
@@ -256,38 +279,41 @@
         
         try {
             document.getElementById('create-btn').disabled = true;
-            document.getElementById('create-btn').textContent = 'Creating...';
+            document.getElementById('create-btn').textContent = 'Waiting for confirmation...';
             
-            const valueWei = Math.floor(parseFloat(reward) * 1e18);
+            const valueWei = ethers.utils.parseEther(reward);
             
-            const res = await fetch(`${API}/api/create-bounty`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    project_token: project + ' ' + hashtag,
-                    description: desc,
-                    min_engagement: parseInt(minLikes),
-                    value: valueWei,
-                    wallet: userAddress
-                })
-            });
-            const data = await res.json();
+            const tx = await contract.create_bounty(
+                project + ' ' + hashtag,
+                desc,
+                parseInt(minLikes),
+                { value: valueWei }
+            );
             
-            if (data.status === 'success') {
-                document.getElementById('vault-receipt').style.display = 'block';
-                document.getElementById('vault-message').textContent = 
-                    `Successfully locked ${reward} GEN. AI tracking parameters are set for the ${hashtag} hashtag threshold.`;
-                document.getElementById('r-id').textContent = data.bounty_id;
-                document.getElementById('r-amount').textContent = reward + ' GEN';
-                document.getElementById('r-hashtag').textContent = hashtag;
-                document.getElementById('r-likes').textContent = minLikes;
-                document.getElementById('r-status').textContent = 'Active — Waiting for Submissions';
-                document.getElementById('r-tx').textContent = data.tx_hash;
-                
-                loadBounties();
-            } else {
-                alert('Error: ' + (data.detail || 'Unknown error'));
-            }
+            document.getElementById('create-btn').textContent = 'Confirming on-chain...';
+            
+            const receipt = await tx.wait();
+            
+            // Get bounty ID
+            const nextId = await contract.next_id();
+            const bountyId = parseInt(nextId.toString()) - 1;
+            
+            // Update UI
+            document.getElementById('vault-receipt').style.display = 'block';
+            document.getElementById('vault-message').textContent = 
+                `Successfully locked ${reward} GEN. AI tracking parameters are set for the ${hashtag} hashtag threshold.`;
+            document.getElementById('r-id').textContent = bountyId;
+            document.getElementById('r-amount').textContent = reward + ' GEN';
+            document.getElementById('r-hashtag').textContent = hashtag;
+            document.getElementById('r-likes').textContent = minLikes;
+            document.getElementById('r-status').textContent = 'Active — Waiting for Submissions';
+            document.getElementById('r-tx').textContent = tx.hash;
+            
+            loadBounties();
+            
+            const bal = await provider.getBalance(userAddress);
+            document.getElementById('wallet-balance').textContent = 'Balance: ' + parseFloat(ethers.utils.formatEther(bal)).toFixed(4) + ' GEN';
+            
         } catch(e) {
             alert('Error: ' + e.message);
         } finally {
@@ -297,6 +323,8 @@
     }
     
     async function submitMeme() {
+        if (!contract) return alert('Connect wallet first');
+        
         const bountyId = document.getElementById('bounty-id').value;
         const postUrl = document.getElementById('post-url').value;
         
@@ -324,60 +352,61 @@
         }, 3000);
         
         try {
-            const res = await fetch(`${API}/api/submit-meme`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    bounty_id: parseInt(bountyId),
-                    post_url: postUrl,
-                    wallet: userAddress
-                })
-            });
-            const data = await res.json();
+            const tx = await contract.submit_meme(parseInt(bountyId), postUrl);
+            
+            document.getElementById('submit-btn').textContent = 'Confirming on-chain...';
+            
+            const receipt = await tx.wait();
             
             setTimeout(() => {
                 p3.className = 'progress-line done';
                 
                 loadBounties();
                 
-                const verdict = document.getElementById('verdict-box');
-                verdict.style.display = 'block';
-                
-                if (data.status === 'success') {
-                    const bounty = data.bounty;
-                    const approved = bounty.status === 'COMPLETED';
+                setTimeout(async () => {
+                    const verdict = document.getElementById('verdict-box');
+                    verdict.style.display = 'block';
                     
-                    if (approved) {
-                        verdict.className = 'verdict-box approved';
-                        document.getElementById('verdict-title').textContent = '🎉 VERDICT: APPROVED';
-                        document.getElementById('verdict-message').innerHTML = `
-                            <strong>GEN escrow pool has been automatically released to your payout wallet.</strong><br><br>
-                            Hashtag Audit: ✓ PASSED<br>
-                            Engagement Count: ✓ SUCCESS<br>
-                            Financial State: ✓ RELEASED
-                        `;
-                    } else {
-                        verdict.className = 'verdict-box rejected';
-                        document.getElementById('verdict-title').textContent = '❌ VERDICT: REJECTED';
-                        document.getElementById('verdict-message').innerHTML = `
-                            The AI consensus determined the post did not meet criteria.<br><br>
-                            Hashtag Audit: ✗ FAILED<br>
-                            Engagement Count: ✗ FAILED<br>
-                            Financial State: ✗ RETURNED TO SPONSOR
-                        `;
+                    try {
+                        const bountyStr = await contract.get_bounty(parseInt(bountyId));
+                        const bounty = JSON.parse(bountyStr);
+                        const approved = bounty.status === 'COMPLETED';
+                        
+                        if (approved) {
+                            verdict.className = 'verdict-box approved';
+                            document.getElementById('verdict-title').textContent = '🎉 VERDICT: APPROVED';
+                            document.getElementById('verdict-message').innerHTML = `
+                                <strong>GEN escrow pool has been automatically released to your payout wallet.</strong><br><br>
+                                Hashtag Audit: ✓ PASSED<br>
+                                Engagement Count: ✓ SUCCESS<br>
+                                Financial State: ✓ RELEASED
+                            `;
+                        } else {
+                            verdict.className = 'verdict-box rejected';
+                            document.getElementById('verdict-title').textContent = '❌ VERDICT: REJECTED';
+                            document.getElementById('verdict-message').innerHTML = `
+                                The AI consensus determined the post did not meet criteria.<br><br>
+                                Hashtag Audit: ✗ FAILED<br>
+                                Engagement Count: ✗ FAILED<br>
+                                Financial State: ✗ RETURNED TO SPONSOR
+                            `;
+                        }
+                    } catch(e) {
+                        verdict.className = 'verdict-box';
+                        document.getElementById('verdict-title').textContent = '⏳ STILL PROCESSING';
+                        document.getElementById('verdict-message').innerHTML = 'The AI consensus is still running. Please check back in 2-3 minutes.';
                     }
-                    document.getElementById('v-tx').textContent = data.tx_hash;
-                } else if (data.status === 'pending') {
-                    verdict.className = 'verdict-box';
-                    document.getElementById('verdict-title').textContent = '⏳ STILL PROCESSING';
-                    document.getElementById('verdict-message').innerHTML = 'The AI consensus is still running. Please check back in 2-3 minutes.';
-                }
-            }, 4500);
+                    
+                    document.getElementById('v-tx').textContent = tx.hash;
+                }, 2000);
+            }, 3000);
         } catch(e) {
             p3.className = 'progress-line error';
             document.getElementById('verdict-box').style.display = 'block';
             document.getElementById('verdict-title').textContent = '❌ ERROR';
             document.getElementById('verdict-message').innerHTML = e.message;
+        } finally {
+            document.getElementById('submit-btn').textContent = '🚀 Submit for AI Adjudication';
         }
     }
     
