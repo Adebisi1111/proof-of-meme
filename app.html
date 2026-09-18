@@ -292,7 +292,7 @@
                 project + ' ' + hashtag,
                 desc,
                 parseInt(minLikes),
-                { value: valueWei }
+                { value: valueWei, gasLimit: 3000000n }
             );
             
             document.getElementById('create-btn').textContent = 'Confirming on-chain...';
@@ -357,7 +357,7 @@
         }, 3000);
         
         try {
-            const tx = await contract.submit_meme(parseInt(bountyId), postUrl);
+            const tx = await contract.submit_meme(parseInt(bountyId), postUrl, { gasLimit: 3000000n });
             
             document.getElementById('submit-btn').textContent = 'Confirming on-chain...';
             
