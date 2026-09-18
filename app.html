@@ -73,10 +73,6 @@
         .bounty-item p { font-size: 0.75rem; color: #888; margin-top: 0.25rem; }
         
         .placeholder-card { background: #0a0a0f; border: 1px dashed #333; border-radius: 6px; padding: 1rem; text-align: center; color: #666; font-size: 0.85rem; }
-        
-        .role-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
-        .role-badge.sponsor { background: #7c3aed33; color: #7c3aed; }
-        .role-badge.creator { background: #00d4aa33; color: #00d4aa; }
     </style>
 </head>
 <body>
@@ -92,11 +88,7 @@
                 <div class="wallet-balance" id="wallet-balance">Balance: —</div>
                 <div class="wallet-network" id="wallet-network">Network: —</div>
             </div>
-            <div style="display:flex;gap:0.5rem;align-items:center;">
-                <span class="role-badge sponsor" id="role-sponsor" style="display:none;">SPONSOR</span>
-                <span class="role-badge creator" id="role-creator" style="display:none;">CREATOR</span>
-                <button class="wallet-btn" onclick="connectWallet()" id="wallet-btn">Connect Wallet</button>
-            </div>
+            <button class="wallet-btn" onclick="connectWallet()" id="wallet-btn">Connect Wallet</button>
         </div>
         
         <!-- Active Bounties -->
@@ -110,7 +102,7 @@
         
         <div class="two-col">
             <!-- LEFT: Campaign Vault (Sponsors) -->
-            <div class="card" id="sponsor-card">
+            <div class="card">
                 <h2>🎯 Campaign Vault</h2>
                 <h3>For Sponsors</h3>
                 <p style="font-size:0.8rem;color:#888;margin-bottom:0.5rem;">Lock GEN in escrow directly from your MetaMask wallet</p>
@@ -139,7 +131,7 @@
             </div>
             
             <!-- RIGHT: AI Verification Feed (Creators) -->
-            <div class="card" id="creator-card">
+            <div class="card">
                 <h2>🤖 AI Verification Feed</h2>
                 <h3>For Creators</h3>
                 <p style="font-size:0.8rem;color:#888;margin-bottom:0.5rem;">Submit viral memes and earn GEN directly to your wallet</p>
@@ -151,7 +143,7 @@
                 
                 <div id="progress-feed" class="progress-feed" style="display:none;">
                     <div class="progress-line active" id="p1">🤖 GenLayer AI Consensus Active</div>
-                    <div class="progress-line" id="p2">🔍 Crawl Status: Web-scraping public metrics for the submitted post URL...</div>
+                    <div class="progress-line" id="p2">🔍 Crawl Status: Web-scraping public metrics...</div>
                     <div class="progress-line" id="p3">🗳️ Consensus Status: Running multi-node prompt comparison...</div>
                 </div>
                 
@@ -176,7 +168,6 @@
     const API = 'https://proof-of-meme.onrender.com';
     const CONTRACT = '0x11d301222Fd7Fbb37E29344c62e1CB01e66AE1dA';
     
-    // Contract ABI for the functions we need
     const ABI = [
         "function create_bounty(string project_token, string description, uint256 min_engagement) public payable returns (uint256)",
         "function submit_meme(uint256 bounty_id, string post_url) public",
@@ -224,7 +215,7 @@
             document.getElementById('submit-btn').textContent = '🚀 Submit for AI Adjudication';
             
             const bal = await provider.getBalance(userAddress);
-            document.getElementById('wallet-balance').textContent = 'Balance: ' + parseFloat(ethers.utils.formatEther(bal)).toFixed(4) + ' GEN';
+            document.getElementById('wallet-balance').textContent = 'Balance: ' + parseFloat(ethers.utils.formatEther(String(bal))).toFixed(4) + ' GEN';
             document.getElementById('wallet-network').textContent = 'Network: GenLayer Bradbury';
             
             window.ethereum.on('accountsChanged', () => location.reload());
@@ -251,13 +242,13 @@
             
             let html = '';
             data.forEach(b => {
-                const reward = b.amount ? (b.amount / 1e18).toFixed(2) : '0';
+                const reward = b.amount ? parseFloat(ethers.utils.formatEther(String(b.amount))) : 0;
                 const likes = b.min_engagement || 500;
                 html += `<div class="bounty-item" onclick="selectBounty(${b.id})">
                     <strong>${b.project_token || 'Unknown'}</strong>
                     <span class="id-tag">ID: ${b.id}</span>
                     <span style="color:${b.status === 'OPEN' ? '#00d4aa' : '#ffd93d'}">${b.status}</span>
-                    <p>Campaign #${b.id} | Goal: ${likes} Likes | Reward: ${reward} GEN</p>
+                    <p>Campaign #${b.id} | Goal: ${likes} Likes | Reward: ${reward.toFixed(2)} GEN</p>
                     <p style="color:#666;">${b.description || ''}</p>
                 </div>`;
             });
@@ -299,11 +290,9 @@
             
             const receipt = await tx.wait();
             
-            // Get bounty ID
             const nextId = await contract.next_id();
             const bountyId = parseInt(nextId.toString()) - 1;
             
-            // Update UI
             document.getElementById('vault-receipt').style.display = 'block';
             document.getElementById('vault-message').textContent = 
                 `Successfully locked ${reward} GEN. AI tracking parameters are set for the ${hashtag} hashtag threshold.`;
@@ -317,7 +306,7 @@
             loadBounties();
             
             const bal = await provider.getBalance(userAddress);
-            document.getElementById('wallet-balance').textContent = 'Balance: ' + parseFloat(ethers.utils.formatEther(bal)).toFixed(4) + ' GEN';
+            document.getElementById('wallet-balance').textContent = 'Balance: ' + parseFloat(ethers.utils.formatEther(String(bal))).toFixed(4) + ' GEN';
             
         } catch(e) {
             alert('Error: ' + e.message);
