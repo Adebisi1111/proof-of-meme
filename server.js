@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json());
 // Frontend served from GitHub Pages
 
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0xFD665Bdc770a70ADe50D9641A1705f046773FD9e';
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0xfd665bdc770a70ade50d9641a1705f0467773fd9e';
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
 const RPC_URL = process.env.RPC_URL || 'https://rpc-bradbury.genlayer.com';
 
