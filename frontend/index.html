@@ -3,53 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proof-of-Meme | AI-Verified Viral Meme Bounties</title>
+    <title>Proof-of-Meme</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
-        .container { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
-        .hero { text-align: center; padding: 4rem 0; }
-        h1 { font-size: 3rem; background: linear-gradient(135deg, #00d4aa, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem; }
-        .tagline { font-size: 1.2rem; color: #888; margin-bottom: 2rem; }
-        .cta { display: inline-block; padding: 1rem 2rem; background: linear-gradient(135deg, #00d4aa, #7c3aed); color: white; border-radius: 8px; text-decoration: none; font-weight: 600; }
-        .cta:hover { opacity: 0.9; }
-        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 3rem; }
-        .feature { background: #151520; border: 1px solid #2a2a3a; border-radius: 12px; padding: 1.5rem; text-align: center; }
-        .feature-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-        .feature h3 { color: #00d4aa; margin-bottom: 0.5rem; }
-        .feature p { color: #888; font-size: 0.85rem; }
-        footer { text-align: center; margin-top: 3rem; color: #666; font-size: 0.85rem; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; }
+        .center { text-align: center; max-width: 360px; }
+        h1 { font-size: 1.8rem; background: linear-gradient(135deg, #00d4aa, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }
+        .tagline { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+        .features { text-align: left; margin-bottom: 2rem; }
+        .feat { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem; color: #ccc; }
+        .feat span { color: #00d4aa; }
+        .cta { display: inline-block; padding: 0.75rem 2rem; background: linear-gradient(135deg, #00d4aa, #7c3aed); color: white; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="hero">
-            <h1>Proof-of-Meme</h1>
-            <p class="tagline">AI-Verified Viral Meme Bounties on GenLayer</p>
-            <a href="app.html" class="cta">Launch App</a>
-        </div>
-
+    <div class="center">
+        <h1>Proof-of-Meme</h1>
+        <p class="tagline">AI-Verified Viral Meme Bounties</p>
         <div class="features">
-            <div class="feature">
-                <div class="feature-icon">🎯</div>
-                <h3>Post Bounties</h3>
-                <p>Create GEN rewards for viral memes about your project</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">🤖</div>
-                <h3>AI Verification</h3>
-                <p>GenLayer AI checks if your meme is real and viral</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon">💰</div>
-                <h3>Instant Payout</h3>
-                <p>Get paid automatically when AI approves your meme</p>
-            </div>
+            <div class="feat"><span>→</span> Post bounties with GEN rewards</div>
+            <div class="feat"><span>→</span> Submit viral memes</div>
+            <div class="feat"><span>→</span> AI verifies & pays instantly</div>
         </div>
-
-        <footer>
-            <p>Built on GenLayer Bradbury Testnet</p>
-        </footer>
+        <a href="app.html" class="cta">Open App</a>
     </div>
 </body>
 </html>
