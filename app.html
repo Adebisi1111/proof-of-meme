@@ -3,95 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proof-of-Meme | App</title>
+    <title>Proof-of-Meme | Live Marketing Receipt</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
-        .container { max-width: 480px; margin: 0 auto; padding: 1rem; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 1rem; }
         .back { color: #888; text-decoration: none; font-size: 0.85rem; display: block; margin-bottom: 1rem; }
-        h1 { font-size: 1.4rem; color: #00d4aa; margin-bottom: 0.25rem; }
-        .subtitle { color: #666; margin-bottom: 1rem; font-size: 0.8rem; }
-        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-        .tab { flex: 1; padding: 0.5rem; text-align: center; cursor: pointer; color: #888; border: 1px solid #2a2a3a; border-radius: 6px; font-size: 0.85rem; }
-        .tab.active { color: #00d4aa; border-color: #00d4aa; background: #00d4aa11; }
-        .card { display: none; }
-        .card.active { display: block; }
+        h1 { font-size: 1.6rem; color: #00d4aa; margin-bottom: 0.25rem; }
+        .subtitle { color: #666; margin-bottom: 1.5rem; font-size: 0.85rem; }
+        
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+        
+        .card { background: #0f1520; border: 1px solid #2a2a3a; border-radius: 8px; padding: 1.25rem; }
+        .card h2 { color: #00d4aa; font-size: 1.1rem; margin-bottom: 0.75rem; }
+        .card h3 { color: #7c3aed; font-size: 0.95rem; margin-bottom: 0.5rem; }
+        
         label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 0.2rem; margin-top: 0.6rem; }
-        input, textarea { width: 100%; padding: 0.6rem; background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 6px; color: #e0e0e0; font-size: 0.9rem; }
+        input, textarea { width: 100%; padding: 0.6rem; background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 6px; color: #e0e0e0; font-size: 0.85rem; }
         input:focus, textarea:focus { outline: none; border-color: #00d4aa; }
         textarea { resize: vertical; min-height: 50px; }
-        button { width: 100%; padding: 0.7rem; background: linear-gradient(135deg, #00d4aa, #7c3aed); color: white; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; margin-top: 0.75rem; }
+        
+        button { width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #00d4aa, #7c3aed); color: white; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; margin-top: 0.75rem; }
         button:hover { opacity: 0.9; }
-        button:disabled { background: #333; color: #666; cursor: not-allowed; }
-        .status { padding: 0.6rem; background: #0a0a0f; border-radius: 6px; margin-top: 0.5rem; font-size: 0.8rem; word-break: break-all; }
-        .status.success { color: #00d4aa; border: 1px solid #00d4aa33; }
-        .status.error { color: #ff6b6b; border: 1px solid #ff6b6b33; }
-        .status.pending { color: #ffd93d; border: 1px solid #ffd93d33; }
-        a { color: #00d4aa; text-decoration: none; }
+        
+        .vault-receipt { background: #0f1520; border: 1px solid #00d4aa; border-radius: 8px; padding: 1.25rem; margin-top: 1rem; display: none; }
+        .vault-receipt h2 { color: #00d4aa; font-size: 1rem; margin-bottom: 0.75rem; }
+        .vault-row { display: flex; justify-content: space-between; padding: 0.35rem 0; border-bottom: 1px solid #1a2a3a; font-size: 0.8rem; }
+        .vault-row:last-child { border-bottom: none; }
+        .vault-label { color: #888; }
+        .vault-value { color: #e0e0e0; font-weight: 500; text-align: right; word-break: break-all; max-width: 60%; }
+        .vault-value.active { color: #00d4aa; }
+        .vault-value.hash { font-size: 0.7rem; color: #666; }
+        
+        .progress-feed { margin-top: 1rem; }
+        .progress-line { padding: 0.6rem; margin-bottom: 0.4rem; background: #0a0a0f; border-radius: 6px; font-size: 0.8rem; border-left: 3px solid #333; }
+        .progress-line.active { border-left-color: #ffd93d; color: #ffd93d; }
+        .progress-line.done { border-left-color: #00d4aa; color: #00d4aa; }
+        .progress-line.error { border-left-color: #ff6b6b; color: #ff6b6b; }
+        
+        .verdict-box { background: #0f1520; border: 2px solid #00d4aa; border-radius: 8px; padding: 1.25rem; margin-top: 1rem; display: none; box-shadow: 0 0 20px #00d4aa33; }
+        .verdict-box.approved { border-color: #00d4aa; box-shadow: 0 0 20px #00d4aa33; }
+        .verdict-box.rejected { border-color: #ff6b6b; box-shadow: 0 0 20px #ff6b6b33; }
+        .verdict-box h2 { font-size: 1.1rem; margin-bottom: 0.75rem; }
+        .verdict-box.approved h2 { color: #00d4aa; }
+        .verdict-box.rejected h2 { color: #ff6b6b; }
+        
+        .bounties-list { margin-top: 1rem; }
+        .bounty-item { background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 6px; padding: 0.75rem; margin-bottom: 0.5rem; }
+        .bounty-item strong { color: #00d4aa; }
+        .bounty-item p { font-size: 0.75rem; color: #888; margin-top: 0.25rem; }
+        .bounty-item .id-tag { display: inline-block; background: #7c3aed33; color: #7c3aed; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.7rem; margin-left: 0.5rem; }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="index.html" class="back">← Home</a>
         <h1>Proof-of-Meme</h1>
-        <p class="subtitle">AI-Verified Viral Meme Bounties</p>
-
-        <div class="tabs">
-            <div class="tab active" onclick="switchTab('create')">Create</div>
-            <div class="tab" onclick="switchTab('submit')">Submit</div>
-            <div class="tab" onclick="switchTab('view')">View</div>
+        <p class="subtitle">AI-Verified Viral Meme Bounties — Live Marketing Receipt</p>
+        
+        <div class="two-col">
+            <!-- LEFT: Campaign Vault (Sponsors) -->
+            <div class="card">
+                <h2>🎯 Campaign Vault</h2>
+                <h3>For Sponsors</h3>
+                <label>Project Token</label>
+                <input id="project" placeholder="DOGE, SHIB, PEPE...">
+                <label>Campaign Description</label>
+                <textarea id="desc" rows="2" placeholder="Create a viral meme about our token"></textarea>
+                <label>Required Hashtag</label>
+                <input id="hashtag" placeholder="#GenLayer">
+                <label>Reward Amount (GEN)</label>
+                <input id="reward" type="number" placeholder="5.0" step="0.1">
+                <label>Minimum Likes Threshold</label>
+                <input id="min-likes" type="number" placeholder="500">
+                <button onclick="createBounty()">🔒 Deploy & Fund Bounty</button>
+                
+                <div id="vault-receipt" class="vault-receipt">
+                    <h2>🔒 Escrow Vault Funded & Active</h2>
+                    <div class="vault-row"><span class="vault-label">Bounty ID</span><span class="vault-value active" id="r-id">—</span></div>
+                    <div class="vault-row"><span class="vault-label">Locked Amount</span><span class="vault-value" id="r-amount">—</span></div>
+                    <div class="vault-row"><span class="vault-label">Hashtag Required</span><span class="vault-value" id="r-hashtag">—</span></div>
+                    <div class="vault-row"><span class="vault-label">Target Threshold</span><span class="vault-value" id="r-likes">—</span></div>
+                    <div class="vault-row"><span class="vault-label">Status</span><span class="vault-value active" id="r-status">Awaiting AI Verification...</span></div>
+                    <div class="vault-row"><span class="vault-label">Tx Hash</span><span class="vault-value hash" id="r-tx">—</span></div>
+                </div>
+            </div>
+            
+            <!-- RIGHT: AI Verification Feed (Creators) -->
+            <div class="card">
+                <h2>🤖 AI Verification Feed</h2>
+                <h3>For Creators</h3>
+                <label>Bounty ID</label>
+                <input id="bounty-id" type="number" placeholder="0">
+                <label>Your Twitter/Reddit Post URL</label>
+                <input id="post-url" placeholder="https://x.com/...">
+                <label>Your Wallet Address (for payout)</label>
+                <input id="wallet" placeholder="0x...">
+                <button onclick="submitMeme()">🚀 Submit for AI Adjudication</button>
+                
+                <div id="progress-feed" class="progress-feed" style="display:none;">
+                    <div class="progress-line" id="p1">⏳ Render server routing parameters to GenLayer...</div>
+                    <div class="progress-line" id="p2">🔍 AI Nodes actively web-scraping live metrics...</div>
+                    <div class="progress-line" id="p3">🗳️ gl.eq_principle.prompt_comparative running: Nodes voting on consensus...</div>
+                </div>
+                
+                <div id="verdict-box" class="verdict-box">
+                    <h2 id="verdict-title">🎉 VERDICT: PENDING</h2>
+                    <div class="vault-row"><span class="vault-label">Hashtag Audit</span><span class="vault-value" id="v-hashtag">—</span></div>
+                    <div class="vault-row"><span class="vault-label">Engagement Count</span><span class="vault-value" id="v-engagement">—</span></div>
+                    <div class="vault-row"><span class="vault-label">Financial State</span><span class="vault-value" id="v-payout">—</span></div>
+                    <div class="vault-row"><span class="vault-label">Tx Hash</span><span class="vault-value hash" id="v-tx">—</span></div>
+                </div>
+            </div>
         </div>
-
-        <div id="create" class="card active">
-            <label>Project Token</label>
-            <input id="project" placeholder="DOGE">
-            <label>Description</label>
-            <textarea id="desc" rows="2" placeholder="Create a viral DOGE meme"></textarea>
-            <label>Reward (GEN)</label>
-            <input id="reward" type="number" placeholder="0.01" step="0.001">
-            <label>Min Engagement</label>
-            <input id="min-eng" type="number" placeholder="500">
-            <button onclick="createBounty()">Create Bounty</button>
-            <div id="create-status" class="status" style="display:none;"></div>
-        </div>
-
-        <div id="submit" class="card">
-            <label>Bounty ID</label>
-            <input id="bounty-id" type="number" placeholder="0">
-            <label>Post URL</label>
-            <input id="post-url" placeholder="https://twitter.com/...">
-            <button onclick="submitMeme()">Submit Meme</button>
-            <div id="submit-status" class="status" style="display:none;"></div>
-        </div>
-
-        <div id="view" class="card">
-            <label>Bounty ID</label>
-            <input id="view-id" type="number" placeholder="0">
-            <button onclick="viewBounty()">View</button>
-            <div id="view-result" class="status" style="display:none;"></div>
+        
+        <!-- Active Bounties -->
+        <div class="card" style="margin-top:1rem;">
+            <h2>📋 Active Bounties</h2>
+            <button onclick="loadBounties()" style="width:auto;padding:0.4rem 1rem;font-size:0.8rem;">Refresh</button>
+            <div id="bounties-list" class="bounties-list"></div>
         </div>
     </div>
 
     <script>
-    function switchTab(name) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-        document.querySelector(`.tab[onclick="switchTab('${name}')"]`).classList.add('active');
-        document.getElementById(name).classList.add('active');
-    }
-
     const API = 'https://proof-of-meme.onrender.com';
-
+    
+    async function loadBounties() {
+        try {
+            const res = await fetch(`${API}/api/bounties`);
+            const data = await res.json();
+            const list = document.getElementById('bounties-list');
+            
+            if (!data || data.length === 0) {
+                list.innerHTML = '<p style="color:#666;font-size:0.85rem;">No active bounties. Create one!</p>';
+                return;
+            }
+            
+            let html = '';
+            data.forEach(b => {
+                html += `<div class="bounty-item">
+                    <strong>${b.project_token}</strong> <span class="id-tag">ID: ${b.id}</span> — ${b.status}
+                    <p>${b.description}</p>
+                    <p>Reward: ${(b.amount / 1e18).toFixed(2)} GEN | Min Likes: ${b.min_engagement}</p>
+                </div>`;
+            });
+            list.innerHTML = html;
+        } catch(e) {
+            document.getElementById('bounties-list').innerHTML = `<p style="color:#ff6b6b;font-size:0.85rem;">Error: ${e.message}</p>`;
+        }
+    }
+    
     async function createBounty() {
         const project = document.getElementById('project').value;
         const desc = document.getElementById('desc').value;
+        const hashtag = document.getElementById('hashtag').value;
         const reward = document.getElementById('reward').value;
-        const minEng = document.getElementById('min-eng').value;
+        const minLikes = document.getElementById('min-likes').value;
         
         if (!project || !desc || !reward) return alert('Fill all fields');
-
-        showStatus('create-status', 'Creating...', 'pending');
-
+        
         try {
             const res = await fetch(`${API}/api/create-bounty`, {
                 method: 'POST',
@@ -99,81 +170,87 @@
                 body: JSON.stringify({
                     project_token: project,
                     description: desc,
-                    min_engagement: parseInt(minEng) || 500,
+                    hashtag: hashtag || '#GenLayer',
+                    min_engagement: parseInt(minLikes) || 500,
                     value: Math.floor(parseFloat(reward) * 1e18)
                 })
             });
             const data = await res.json();
             
             if (data.status === 'success') {
-                showStatus('create-status', `✅ Created!<br><a href="https://explorer-bradbury.genlayer.com/tx/${data.tx_hash}" target="_blank">View TX</a>`, 'success');
+                document.getElementById('vault-receipt').style.display = 'block';
+                document.getElementById('r-id').textContent = data.bounty_id;
+                document.getElementById('r-amount').textContent = reward + ' GEN';
+                document.getElementById('r-hashtag').textContent = hashtag || '#GenLayer';
+                document.getElementById('r-likes').textContent = minLikes || '500';
+                document.getElementById('r-status').textContent = 'Active — Waiting for Submissions';
+                document.getElementById('r-tx').textContent = data.tx_hash;
+                loadBounties();
             } else {
-                showStatus('create-status', `❌ ${data.detail}`, 'error');
+                alert('Error: ' + data.detail);
             }
-        } catch (e) {
-            showStatus('create-status', `❌ ${e.message}`, 'error');
+        } catch(e) {
+            alert('Error: ' + e.message);
         }
     }
-
+    
     async function submitMeme() {
         const bountyId = document.getElementById('bounty-id').value;
         const postUrl = document.getElementById('post-url').value;
+        const wallet = document.getElementById('wallet').value;
         
         if (bountyId === '' || !postUrl) return alert('Fill all fields');
-
-        showStatus('submit-status', 'Submitting... (2-3 min)', 'pending');
-
+        
+        document.getElementById('progress-feed').style.display = 'block';
+        document.getElementById('verdict-box').style.display = 'none';
+        
+        const p1 = document.getElementById('p1');
+        const p2 = document.getElementById('p2');
+        const p3 = document.getElementById('p3');
+        
+        p1.className = 'progress-line active';
+        p2.className = 'progress-line';
+        p3.className = 'progress-line';
+        
+        setTimeout(() => { p1.className = 'progress-line done'; p2.className = 'progress-line active'; }, 1500);
+        setTimeout(() => { p2.className = 'progress-line done'; p3.className = 'progress-line active'; }, 3000);
+        
         try {
             const res = await fetch(`${API}/api/submit-meme`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bounty_id: parseInt(bountyId), post_url: postUrl })
+                body: JSON.stringify({ bounty_id: parseInt(bountyId), post_url: postUrl, wallet: wallet })
             });
             const data = await res.json();
             
-            if (data.status === 'success') {
-                const bounty = data.bounty;
-                const approved = bounty.status === 'COMPLETED';
-                showStatus('submit-status', `${approved ? '✅ Approved!' : '❌ Rejected'}<br><a href="https://explorer-bradbury.genlayer.com/tx/${data.tx_hash}" target="_blank">View TX</a>`, approved ? 'success' : 'error');
-            } else if (data.status === 'pending') {
-                showStatus('submit-status', `⏳ ${data.message}`, 'pending');
-            } else {
-                showStatus('submit-status', `❌ ${data.detail}`, 'error');
-            }
-        } catch (e) {
-            showStatus('submit-status', `❌ ${e.message}`, 'error');
+            setTimeout(() => {
+                p3.className = 'progress-line done';
+                const verdict = document.getElementById('verdict-box');
+                verdict.style.display = 'block';
+                
+                if (data.status === 'success') {
+                    const bounty = data.bounty;
+                    const approved = bounty.status === 'COMPLETED';
+                    verdict.className = 'verdict-box ' + (approved ? 'approved' : 'rejected');
+                    document.getElementById('verdict-title').textContent = approved ? '🎉 VERDICT: APPROVED BY AI CONSENSUS' : '❌ VERDICT: REJECTED';
+                    document.getElementById('v-hashtag').textContent = approved ? 'PASSED ✓' : 'FAILED ✗';
+                    document.getElementById('v-engagement').textContent = approved ? 'SUCCESS ✓' : 'FAILED ✗';
+                    document.getElementById('v-payout').textContent = approved ? 'RELEASED ✓' : 'RETURNED ✓';
+                    document.getElementById('v-tx').textContent = data.tx_hash;
+                    loadBounties();
+                } else if (data.status === 'pending') {
+                    verdict.className = 'verdict-box';
+                    document.getElementById('verdict-title').textContent = '⏳ STILL PROCESSING';
+                }
+            }, 4500);
+        } catch(e) {
+            p3.className = 'progress-line error';
+            document.getElementById('verdict-box').style.display = 'block';
+            document.getElementById('verdict-title').textContent = '❌ ERROR: ' + e.message;
         }
     }
-
-    async function viewBounty() {
-        const id = document.getElementById('view-id').value;
-        
-        try {
-            const res = await fetch(`${API}/bounty/${id}`);
-            const data = await res.json();
-            
-            if (data.error) return showStatus('view-result', `❌ ${data.error}`, 'error');
-
-            let html = `<strong>${data.project_token}</strong> — ${data.status}<br>`;
-            html += `${data.description}<br>`;
-            html += `Reward: ${(data.amount / 1e18).toFixed(4)} GEN<br>`;
-            if (data.submissions?.length > 0) {
-                data.submissions.forEach(s => {
-                    html += `• <a href="${s.url}" target="_blank">${s.url.slice(0,30)}...</a> ${s.approved ? '✅' : '❌'}<br>`;
-                });
-            }
-            showStatus('view-result', html, 'success');
-        } catch (e) {
-            showStatus('view-result', `❌ ${e.message}`, 'error');
-        }
-    }
-
-    function showStatus(id, msg, type) {
-        const el = document.getElementById(id);
-        el.className = 'status ' + type;
-        el.innerHTML = msg;
-        el.style.display = 'block';
-    }
+    
+    window.addEventListener('load', loadBounties);
     </script>
 </body>
 </html>
