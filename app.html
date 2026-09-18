@@ -52,8 +52,10 @@
         .bounties-list { margin-top: 1rem; }
         .bounty-item { background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 6px; padding: 0.75rem; margin-bottom: 0.5rem; }
         .bounty-item strong { color: #00d4aa; }
-        .bounty-item p { font-size: 0.75rem; color: #888; margin-top: 0.25rem; }
         .bounty-item .id-tag { display: inline-block; background: #7c3aed33; color: #7c3aed; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.7rem; margin-left: 0.5rem; }
+        .bounty-item p { font-size: 0.75rem; color: #888; margin-top: 0.25rem; }
+        
+        .placeholder-card { background: #0a0a0f; border: 1px dashed #333; border-radius: 6px; padding: 1rem; text-align: center; color: #666; font-size: 0.85rem; }
     </style>
 </head>
 <body>
@@ -61,6 +63,15 @@
         <a href="index.html" class="back">← Home</a>
         <h1>Proof-of-Meme</h1>
         <p class="subtitle">AI-Verified Viral Meme Bounties — Live Marketing Receipt</p>
+        
+        <!-- Active Bounties -->
+        <div class="card" style="margin-bottom:1rem;">
+            <h2>📋 Active Bounty Campaigns</h2>
+            <div id="bounties-list">
+                <div class="placeholder-card">Loading active campaigns...</div>
+            </div>
+            <button onclick="loadBounties()" style="width:auto;padding:0.4rem 1rem;font-size:0.8rem;margin-top:0.75rem;">Refresh</button>
+        </div>
         
         <div class="two-col">
             <!-- LEFT: Campaign Vault (Sponsors) -->
@@ -80,12 +91,12 @@
                 <button onclick="createBounty()">🔒 Deploy & Fund Bounty</button>
                 
                 <div id="vault-receipt" class="vault-receipt">
-                    <h2>🔒 Escrow Vault Funded & Active</h2>
+                    <h2>🔒 Escrow Vault Active</h2>
+                    <div id="vault-message"></div>
                     <div class="vault-row"><span class="vault-label">Bounty ID</span><span class="vault-value active" id="r-id">—</span></div>
                     <div class="vault-row"><span class="vault-label">Locked Amount</span><span class="vault-value" id="r-amount">—</span></div>
                     <div class="vault-row"><span class="vault-label">Hashtag Required</span><span class="vault-value" id="r-hashtag">—</span></div>
                     <div class="vault-row"><span class="vault-label">Target Threshold</span><span class="vault-value" id="r-likes">—</span></div>
-                    <div class="vault-row"><span class="vault-label">Status</span><span class="vault-value active" id="r-status">Awaiting AI Verification...</span></div>
                     <div class="vault-row"><span class="vault-label">Tx Hash</span><span class="vault-value hash" id="r-tx">—</span></div>
                 </div>
             </div>
@@ -103,26 +114,17 @@
                 <button onclick="submitMeme()">🚀 Submit for AI Adjudication</button>
                 
                 <div id="progress-feed" class="progress-feed" style="display:none;">
-                    <div class="progress-line" id="p1">⏳ Render server routing parameters to GenLayer...</div>
-                    <div class="progress-line" id="p2">🔍 AI Nodes actively web-scraping live metrics...</div>
-                    <div class="progress-line" id="p3">🗳️ gl.eq_principle.prompt_comparative running: Nodes voting on consensus...</div>
+                    <div class="progress-line active" id="p1">🤖 GenLayer AI Consensus Active</div>
+                    <div class="progress-line" id="p2">🔍 Crawl Status: Web-scraping public metrics for the submitted post URL...</div>
+                    <div class="progress-line" id="p3">🗳️ Consensus Status: Running multi-node prompt comparison...</div>
                 </div>
                 
                 <div id="verdict-box" class="verdict-box">
                     <h2 id="verdict-title">🎉 VERDICT: PENDING</h2>
-                    <div class="vault-row"><span class="vault-label">Hashtag Audit</span><span class="vault-value" id="v-hashtag">—</span></div>
-                    <div class="vault-row"><span class="vault-label">Engagement Count</span><span class="vault-value" id="v-engagement">—</span></div>
-                    <div class="vault-row"><span class="vault-label">Financial State</span><span class="vault-value" id="v-payout">—</span></div>
+                    <div id="verdict-message"></div>
                     <div class="vault-row"><span class="vault-label">Tx Hash</span><span class="vault-value hash" id="v-tx">—</span></div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Active Bounties -->
-        <div class="card" style="margin-top:1rem;">
-            <h2>📋 Active Bounties</h2>
-            <button onclick="loadBounties()" style="width:auto;padding:0.4rem 1rem;font-size:0.8rem;">Refresh</button>
-            <div id="bounties-list" class="bounties-list"></div>
         </div>
     </div>
 
@@ -130,36 +132,44 @@
     const API = 'https://proof-of-meme.onrender.com';
     
     async function loadBounties() {
+        const list = document.getElementById('bounties-list');
+        list.innerHTML = '<div class="placeholder-card">Loading active campaigns...</div>';
+        
         try {
             const res = await fetch(`${API}/api/bounties`);
+            if (!res.ok) throw new Error('Server response: ' + res.status);
             const data = await res.json();
-            const list = document.getElementById('bounties-list');
             
             if (!data || data.length === 0) {
-                list.innerHTML = '<p style="color:#666;font-size:0.85rem;">No active bounties. Create one!</p>';
+                list.innerHTML = '<div class="placeholder-card">📋 No active campaigns yet.<br>Create the first bounty →</div>';
                 return;
             }
             
             let html = '';
             data.forEach(b => {
+                const reward = b.amount ? (b.amount / 1e18).toFixed(2) : '0';
+                const likes = b.min_engagement || 500;
+                const hashtag = b.hashtag || '#GenLayer';
                 html += `<div class="bounty-item">
-                    <strong>${b.project_token}</strong> <span class="id-tag">ID: ${b.id}</span> — ${b.status}
-                    <p>${b.description}</p>
-                    <p>Reward: ${(b.amount / 1e18).toFixed(2)} GEN | Min Likes: ${b.min_engagement}</p>
+                    <strong>${b.project_token || 'Unknown'}</strong>
+                    <span class="id-tag">ID: ${b.id !== undefined ? b.id : '—'}</span>
+                    <span style="color:${b.status === 'OPEN' ? '#00d4aa' : '#ffd93d'}">${b.status || 'UNKNOWN'}</span>
+                    <p>Campaign #${b.id !== undefined ? b.id : '—'} — Tracking: ${hashtag} | Goal: ${likes} Likes | Reward: ${reward} GEN</p>
+                    <p style="color:#666;">${b.description || ''}</p>
                 </div>`;
             });
             list.innerHTML = html;
         } catch(e) {
-            document.getElementById('bounties-list').innerHTML = `<p style="color:#ff6b6b;font-size:0.85rem;">Error: ${e.message}</p>`;
+            list.innerHTML = `<div class="placeholder-card">📋 Unable to load campaigns.<br><small style="color:#ff6b6b;">${e.message}</small><br><br>Create a new bounty →</div>`;
         }
     }
     
     async function createBounty() {
         const project = document.getElementById('project').value;
         const desc = document.getElementById('desc').value;
-        const hashtag = document.getElementById('hashtag').value;
+        const hashtag = document.getElementById('hashtag').value || '#GenLayer';
         const reward = document.getElementById('reward').value;
-        const minLikes = document.getElementById('min-likes').value;
+        const minLikes = document.getElementById('min-likes').value || '500';
         
         if (!project || !desc || !reward) return alert('Fill all fields');
         
@@ -170,8 +180,8 @@
                 body: JSON.stringify({
                     project_token: project,
                     description: desc,
-                    hashtag: hashtag || '#GenLayer',
-                    min_engagement: parseInt(minLikes) || 500,
+                    hashtag: hashtag,
+                    min_engagement: parseInt(minLikes),
                     value: Math.floor(parseFloat(reward) * 1e18)
                 })
             });
@@ -179,15 +189,18 @@
             
             if (data.status === 'success') {
                 document.getElementById('vault-receipt').style.display = 'block';
+                document.getElementById('vault-message').innerHTML = `
+                    style="color:#00d4aa;font-size:0.85rem;margin-bottom:0.75rem;">
+                    Successfully locked <strong>${reward} GEN</strong>. AI tracking parameters are set for the <strong>${hashtag}</strong> hashtag threshold.
+                `;
                 document.getElementById('r-id').textContent = data.bounty_id;
                 document.getElementById('r-amount').textContent = reward + ' GEN';
-                document.getElementById('r-hashtag').textContent = hashtag || '#GenLayer';
-                document.getElementById('r-likes').textContent = minLikes || '500';
-                document.getElementById('r-status').textContent = 'Active — Waiting for Submissions';
+                document.getElementById('r-hashtag').textContent = hashtag;
+                document.getElementById('r-likes').textContent = minLikes;
                 document.getElementById('r-tx').textContent = data.tx_hash;
                 loadBounties();
             } else {
-                alert('Error: ' + data.detail);
+                alert('Error: ' + (data.detail || 'Unknown error'));
             }
         } catch(e) {
             alert('Error: ' + e.message);
@@ -212,8 +225,15 @@
         p2.className = 'progress-line';
         p3.className = 'progress-line';
         
-        setTimeout(() => { p1.className = 'progress-line done'; p2.className = 'progress-line active'; }, 1500);
-        setTimeout(() => { p2.className = 'progress-line done'; p3.className = 'progress-line active'; }, 3000);
+        setTimeout(() => {
+            p1.className = 'progress-line done';
+            p2.className = 'progress-line active';
+        }, 1500);
+        
+        setTimeout(() => {
+            p2.className = 'progress-line done';
+            p3.className = 'progress-line active';
+        }, 3000);
         
         try {
             const res = await fetch(`${API}/api/submit-meme`, {
@@ -231,22 +251,41 @@
                 if (data.status === 'success') {
                     const bounty = data.bounty;
                     const approved = bounty.status === 'COMPLETED';
-                    verdict.className = 'verdict-box ' + (approved ? 'approved' : 'rejected');
-                    document.getElementById('verdict-title').textContent = approved ? '🎉 VERDICT: APPROVED BY AI CONSENSUS' : '❌ VERDICT: REJECTED';
-                    document.getElementById('v-hashtag').textContent = approved ? 'PASSED ✓' : 'FAILED ✗';
-                    document.getElementById('v-engagement').textContent = approved ? 'SUCCESS ✓' : 'FAILED ✗';
-                    document.getElementById('v-payout').textContent = approved ? 'RELEASED ✓' : 'RETURNED ✓';
+                    
+                    if (approved) {
+                        verdict.className = 'verdict-box approved';
+                        document.getElementById('verdict-title').textContent = '🎉 VERDICT: APPROVED';
+                        document.getElementById('verdict-message').innerHTML = `
+                            style="color:#00d4aa;font-size:0.85rem;">
+                            <strong>5.0 GEN escrow pool has been automatically released to your payout wallet.</strong><br><br>
+                            Hashtag Audit: ✓ PASSED<br>
+                            Engagement Count: ✓ SUCCESS<br>
+                            Financial State: ✓ RELEASED
+                        `;
+                    } else {
+                        verdict.className = 'verdict-box rejected';
+                        document.getElementById('verdict-title').textContent = '❌ VERDICT: REJECTED';
+                        document.getElementById('verdict-message').innerHTML = `
+                            style="color:#ff6b6b;font-size:0.85rem;">
+                            The AI consensus determined the post did not meet criteria.<br><br>
+                            Hashtag Audit: ✗ FAILED<br>
+                            Engagement Count: ✗ FAILED<br>
+                            Financial State: ✗ RETURNED TO SPONSOR
+                        `;
+                    }
                     document.getElementById('v-tx').textContent = data.tx_hash;
                     loadBounties();
                 } else if (data.status === 'pending') {
                     verdict.className = 'verdict-box';
                     document.getElementById('verdict-title').textContent = '⏳ STILL PROCESSING';
+                    document.getElementById('verdict-message').innerHTML = 'The AI consensus is still running. Please check back in 2-3 minutes.';
                 }
             }, 4500);
         } catch(e) {
             p3.className = 'progress-line error';
             document.getElementById('verdict-box').style.display = 'block';
-            document.getElementById('verdict-title').textContent = '❌ ERROR: ' + e.message;
+            document.getElementById('verdict-title').textContent = '❌ ERROR';
+            document.getElementById('verdict-message').innerHTML = e.message;
         }
     }
     
