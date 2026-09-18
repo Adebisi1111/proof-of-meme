@@ -1,15 +1,17 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
+const { createClient, chains } = require('genlayer-js');
+const { privateKeyToAccount } = require('viem/accounts');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-// Frontend served from GitHub Pages
 
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0x11d301222Fd7Fbb37E29344c62e1CB01e66AE1dA';
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
-const RPC_URL = process.env.RPC_URL || 'https://rpc-bradbury.genlayer.com';
+
+const account = PRIVATE_KEY ? privateKeyToAccount(PRIVATE_KEY) : null;
+const client = account ? createClient({ chain: chains.testnetBradbury, account }) : createClient({ chain: chains.testnetBradbury });
 
 app.get('/api/health', (req, res) => {
   res.json({
@@ -20,11 +22,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-app.get('/healthz', (req, res) => {
-  res.send('ok');
-});
-
-// Create bounty
 app.post('/api/create-bounty', async (req, res) => {
   try {
     const { project_token, description, min_engagement, value } = req.body;
@@ -35,12 +32,6 @@ app.post('/api/create-bounty', async (req, res) => {
       return res.status(500).json({ detail: 'PRIVATE_KEY not set' });
     }
 
-    const { createClient, chains } = require('genlayer-js');
-    const { privateKeyToAccount } = require('viem/accounts');
-
-    const account = privateKeyToAccount(PRIVATE_KEY);
-    const client = createClient({ chain: chains.testnetBradbury, account });
-
     const txHash = await client.writeContract({
       address: CONTRACT_ADDRESS,
       functionName: 'create_bounty',
@@ -48,7 +39,6 @@ app.post('/api/create-bounty', async (req, res) => {
       value: BigInt(value),
     });
 
-    // Read back the bounty ID
     const nextId = await client.readContract({
       address: CONTRACT_ADDRESS,
       functionName: 'next_id',
@@ -68,7 +58,6 @@ app.post('/api/create-bounty', async (req, res) => {
   }
 });
 
-// Submit meme
 app.post('/api/submit-meme', async (req, res) => {
   try {
     const { bounty_id, post_url } = req.body;
@@ -79,12 +68,6 @@ app.post('/api/submit-meme', async (req, res) => {
       return res.status(500).json({ detail: 'PRIVATE_KEY not set' });
     }
 
-    const { createClient, chains } = require('genlayer-js');
-    const { privateKeyToAccount } = require('viem/accounts');
-
-    const account = privateKeyToAccount(PRIVATE_KEY);
-    const client = createClient({ chain: chains.testnetBradbury, account });
-
     const txHash = await client.writeContract({
       address: CONTRACT_ADDRESS,
       functionName: 'submit_meme',
@@ -92,7 +75,6 @@ app.post('/api/submit-meme', async (req, res) => {
       value: 0n,
     });
 
-    // Poll for result - consensus takes 2-3 minutes
     let attempts = 0;
     const maxAttempts = 30;
     let result = null;
@@ -100,7 +82,6 @@ app.post('/api/submit-meme', async (req, res) => {
     while (attempts < maxAttempts) {
       await new Promise(r => setTimeout(r, 10000));
       attempts++;
-
       try {
         const bounty = await client.readContract({
           address: CONTRACT_ADDRESS,
@@ -112,35 +93,26 @@ app.post('/api/submit-meme', async (req, res) => {
           result = parsed;
           break;
         }
-      } catch (e) {
-        // Not ready yet
-      }
+      } catch (e) {}
     }
 
     if (!result) {
       return res.status(202).json({
         status: 'pending',
         tx_hash: txHash,
-        message: 'Submission is being verified by GenLayer AI consensus. Check back in 2-3 minutes.'
+        message: 'Submission is being verified. Check back in 2-3 minutes.'
       });
     }
 
-    res.json({
-      status: 'success',
-      bounty: result,
-      tx_hash: txHash
-    });
+    res.json({ status: 'success', bounty: result, tx_hash: txHash });
   } catch (err) {
     console.error('Submit meme error:', err);
     res.status(500).json({ detail: err.message });
   }
 });
 
-// Get bounty
 app.get('/api/bounty/:id', async (req, res) => {
   try {
-    const { createClient, chains } = require('genlayer-js');
-    const client = createClient({ chain: chains.testnetBradbury });
     const bounty = await client.readContract({
       address: CONTRACT_ADDRESS,
       functionName: 'get_bounty',
@@ -152,11 +124,8 @@ app.get('/api/bounty/:id', async (req, res) => {
   }
 });
 
-// Get all bounties
 app.get('/api/bounties', async (req, res) => {
   try {
-    const { createClient, chains } = require('genlayer-js');
-    const client = createClient({ chain: chains.testnetBradbury });
     const bounties = await client.readContract({
       address: CONTRACT_ADDRESS,
       functionName: 'get_all_bounties',
@@ -168,11 +137,7 @@ app.get('/api/bounties', async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => {
-  
-});
+app.get('/', (req, res) => {});
 
 const PORT = process.env.PORT || 8000;
-app.listen(PORT, () => {
-  console.log(`Proof-of-Meme server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Proof-of-Meme server on port ${PORT}`));
