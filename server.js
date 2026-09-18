@@ -5,7 +5,7 @@ const path = require('path');
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'static')));
+// Frontend served from GitHub Pages
 
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0xFD665Bdc770a70ADe50D9641A1705f046773FD9e';
 const PRIVATE_KEY = process.env.PRIVATE_KEY || '';
@@ -160,7 +160,7 @@ app.get('/api/next-id', async (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'static', 'index.html'));
+  
 });
 
 const PORT = process.env.PORT || 8000;
